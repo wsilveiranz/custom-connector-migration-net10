@@ -77,14 +77,14 @@
         "127.0.0.1"
       ],
       "options": {
-        "cwd": "${workspaceFolder}/bin/Debug/net8.0",
+        "cwd": "${workspaceFolder}/bin/Debug/net10.0",
         "env": {
           "PATH": "${env:PATH}"
         }
       },
       "windows": {
         "options": {
-          "cwd": "bin\\Debug\\net8.0",
+          "cwd": "bin\\Debug\\net10.0",
           "env": {
             "PATH": "${config:azureLogicAppsStandard.autoRuntimeDependenciesPath}\\NodeJs;${config:azureLogicAppsStandard.autoRuntimeDependenciesPath}\\DotNetSDK;${env:PATH}"
           }
@@ -92,7 +92,7 @@
       },
       "linux": {
         "options": {
-          "cwd": "bin/Debug/net8.0",
+          "cwd": "bin/Debug/net10.0",
           "env": {
             "PATH": "${config:azureLogicAppsStandard.autoRuntimeDependenciesPath}/NodeJs:${config:azureLogicAppsStandard.autoRuntimeDependenciesPath}/DotNetSDK:${env:PATH}"
           }
@@ -100,7 +100,7 @@
       },
       "osx": {
         "options": {
-          "cwd": "bin/Debug/net8.0",
+          "cwd": "bin/Debug/net10.0",
           "env": {
             "PATH": "${config:azureLogicAppsStandard.autoRuntimeDependenciesPath}/NodeJs:${config:azureLogicAppsStandard.autoRuntimeDependenciesPath}/DotNetSDK:${env:PATH}"
           }
