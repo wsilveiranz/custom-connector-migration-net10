@@ -1,0 +1,153 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "type": "string",
+      "defaultValue": "pravagartexttoolsnet8"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "westcentralus"
+    },
+    "planName": {
+      "type": "string",
+      "defaultValue": "pravagarnugetlogicapp"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "[parameters('appName')]",
+      "metadata": {
+        "description": "A dedicated storage account for this Logic App; do not share with another app."
+      }
+    }
+  },
+  "variables": {
+    "storageId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2026-09-01",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "properties": {
+        "supportsHttpsTrafficOnly": true,
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false,
+        "allowSharedKeyAccess": true,
+        "defaultToOAuthAuthentication": true,
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+      "apiVersion": "2026-09-01",
+      "name": "[concat(parameters('storageAccountName'), '/default/', parameters('appName'))]",
+      "dependsOn": [
+        "[variables('storageId')]"
+      ],
+      "properties": {
+        "shareQuota": 5,
+        "enabledProtocols": "SMB"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2026-08-01",
+      "name": "[parameters('appName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp,workflowapp",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/fileServices/shares', parameters('storageAccountName'), 'default', parameters('appName'))]"
+      ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('planName'))]",
+        "httpsOnly": true,
+        "publicNetworkAccess": "Enabled",
+        "clientAffinityEnabled": false,
+        "siteConfig": {
+          "netFrameworkVersion": "v8.0",
+          "use32BitWorkerProcess": false,
+          "alwaysOn": true,
+          "minTlsVersion": "1.2",
+          "scmMinTlsVersion": "1.2",
+          "ftpsState": "Disabled",
+          "appSettings": [
+            {
+              "name": "APP_KIND",
+              "value": "workflowapp"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet"
+            },
+            {
+              "name": "FUNCTIONS_INPROC_NET8_ENABLED",
+              "value": "1"
+            },
+            {
+              "name": "WORKFLOWS_AUTHENTICATION_METHOD",
+              "value": "managedServiceIdentity"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageId'), '2026-09-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageId'), '2026-09-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "[parameters('appName')]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2026-08-01",
+      "name": "[concat(parameters('appName'), '/ftp')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('appName'))]"
+      ],
+      "properties": {
+        "allow": false
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2026-08-01",
+      "name": "[concat(parameters('appName'), '/scm')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('appName'))]"
+      ],
+      "properties": {
+        "allow": false
+      }
+    }
+  ],
+  "outputs": {
+    "siteId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Web/sites', parameters('appName'))]"
+    },
+    "hostname": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('appName')), '2026-08-01').defaultHostName]"
+    }
+  }
+}

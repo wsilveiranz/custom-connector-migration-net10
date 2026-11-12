@@ -153,7 +153,7 @@ if ($recordedProject -isnot [string] -or -not [System.IO.Path]::IsPathFullyQuali
     throw 'The runtime record does not identify an absolute project path.'
 }
 try {
-    $expectedProject = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\LogicApp\bin\Debug\net8.0')).ProviderPath
+    $expectedProject = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\LogicApp\bin\Debug\net10.0')).ProviderPath
     $actualProject = (Resolve-Path -LiteralPath $recordedProject).ProviderPath
 }
 catch {
