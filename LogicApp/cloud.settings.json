@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "FUNCTIONS_INPROC_NET8_ENABLED": "1",
+    "APP_KIND": "workflowapp",
+    "WORKFLOWS_AUTHENTICATION_METHOD": "managedServiceIdentity"
+  }
+}

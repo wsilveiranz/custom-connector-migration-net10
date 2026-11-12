@@ -1,0 +1,144 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "triggers": {
+      "manual": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "POST",
+          "schema": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      }
+    },
+    "actions": {
+      "Validate_text": {
+        "type": "If",
+        "expression": "@and(equals(triggerBody()?['text'], string(triggerBody()?['text'])), not(empty(trim(string(triggerBody()?['text'])))))",
+        "actions": {
+          "Analyze_text": {
+            "type": "ServiceProvider",
+            "inputs": {
+              "parameters": {
+                "text": "@triggerBody()?['text']"
+              },
+              "serviceProviderConfiguration": {
+                "connectionName": "textTools",
+                "operationId": "analyzeText",
+                "serviceProviderId": "/serviceProviders/textTools"
+              }
+            },
+            "runAfter": {}
+          },
+          "Response_success": {
+            "type": "Response",
+            "kind": "Http",
+            "inputs": {
+              "statusCode": 200,
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "body": "@body('Analyze_text')"
+            },
+            "runAfter": {
+              "Analyze_text": [
+                "Succeeded"
+              ]
+            }
+          },
+          "Is_provider_bad_request": {
+            "type": "If",
+            "expression": "@equals(outputs('Analyze_text')?['statusCode'], 400)",
+            "actions": {
+              "Response_bad_request": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 400,
+                  "headers": {
+                    "Content-Type": "application/json"
+                  },
+                  "body": "@body('Analyze_text')"
+                },
+                "runAfter": {}
+              }
+            },
+            "else": {
+              "actions": {
+                "Response_error": {
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": 500,
+                    "headers": {
+                      "Content-Type": "application/json"
+                    },
+                    "body": {
+                      "error": {
+                        "code": "TextToolsError",
+                        "message": "The text could not be processed."
+                      }
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Terminate_failed": {
+                  "type": "Terminate",
+                  "inputs": {
+                    "runStatus": "Failed",
+                    "runError": {
+                      "code": "TextToolsError",
+                      "message": "The text could not be processed."
+                    }
+                  },
+                  "runAfter": {
+                    "Response_error": [
+                      "Succeeded",
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  }
+                }
+              }
+            },
+            "runAfter": {
+              "Analyze_text": [
+                "Failed",
+                "TimedOut",
+                "Skipped"
+              ]
+            }
+          }
+        },
+        "else": {
+          "actions": {
+            "Response_invalid": {
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 400,
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "error": {
+                    "code": "InvalidText",
+                    "message": "The 'text' field must be a non-empty string."
+                  }
+                }
+              },
+              "runAfter": {}
+            }
+          }
+        },
+        "runAfter": {}
+      }
+    },
+    "outputs": {}
+  },
+  "kind": "Stateful"
+}

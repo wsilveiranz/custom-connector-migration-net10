@@ -1,0 +1,15 @@
+{
+  "serviceProviderConnections": {
+    "textTools": {
+      "displayName": "textTools",
+      "parameterSetName": "connectionString",
+      "parameterValues": {
+        "maxTextLength": "100000"
+      },
+      "serviceProvider": {
+        "id": "/serviceProviders/textTools"
+      }
+    }
+  },
+  "managedApiConnections": {}
+}

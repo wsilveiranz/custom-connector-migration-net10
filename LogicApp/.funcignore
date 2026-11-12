@@ -1,0 +1,10 @@
+local.settings.json
+.azurelogicapps/
+.logicapp-test-state/
+.debug/
+workflow-designtime/
+.vscode/
+.gitignore
+*.log
+*.trx
+cloud.settings.json

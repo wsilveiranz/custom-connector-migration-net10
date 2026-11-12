@@ -1,0 +1,20 @@
+**/bin/
+**/obj/
+**/local.settings.json
+**/.azurelogicapps/
+**/.logicapp-test-state/
+**/.debug/
+**/workflow-designtime/
+**/TestResults/
+artifacts/
+*.user
+*.suo
+
+# IDE and build artifacts
+.vs/
+*.nupkg
+*.snupkg
+publish/
+[Ll]og/
+*.log
+*.trx

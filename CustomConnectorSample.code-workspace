@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "name": "Logic App",
+      "path": "LogicApp"
+    },
+    {
+      "name": "TextTools connector",
+      "path": "TextToolsConnector"
+    },
+    {
+      "name": "Connector tests",
+      "path": "TextToolsConnector.Tests"
+    }
+  ]
+}
