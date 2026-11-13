@@ -1,26 +1,26 @@
-# Logic Apps custom built-in connector sample (.NET 8)
+# Logic Apps custom built-in connector sample (.NET 10)
 
-A local test bed for migrating an Azure Logic Apps Standard custom built-in connector from .NET 8 to .NET 10. It is not a production connector.
+A local test bed for an Azure Logic Apps Standard custom built-in connector migrated from .NET 8 to .NET 10. It is not a production connector.
 
 ## Contents
 
 | Path | Purpose |
 |------|---------|
-| `TextToolsConnector` | .NET 8 class library. Service provider `/serviceProviders/textTools` with one action, `analyzeText`. |
+| `TextToolsConnector` | .NET 10 class library. Service provider `/serviceProviders/textTools` with one action, `analyzeText`. |
 | `TextToolsConnector.Tests` | xUnit tests for the provider (30 tests). |
 | `LogicApp` | NuGet-based Logic Apps Standard project. References the connector project. Contains the Stateful workflow `AnalyzeText`. |
 | `scripts\Test-AnalyzeText.ps1` | Optional live checks against a running local host. |
 | `CustomConnectorSample.code-workspace` | VS Code multi-root workspace. |
 
-## Baseline versions
+## Versions
 
-- .NET SDK 8.0.427 (pinned in `global.json`), target `net8.0`
+- .NET SDK 10.0.403 (pinned in both `global.json` files), target `net10.0`
 - `Microsoft.NET.Sdk.Functions` 4.4.0
-- `Microsoft.Azure.Workflows.WebJobs.Extension` 1.165.50 (host and connector)
-- Azure Functions Core Tools 4.16.0
+- `Microsoft.Azure.Workflows.WebJobs.Extension` 1.194.31 (host and connector)
+- Azure Functions Core Tools 4.16.0 was tested locally
 - `host.json` has no extension bundle. The workflow runtime loads from NuGet.
 
-.NET 8 reached end of support on November 10, 2026. This baseline exists only to test the migration.
+The connector directly references `Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.0 and `Microsoft.Extensions.Primitives` 9.0.9 to resolve dependency downgrades in this package graph. Restore also reports high and critical vulnerabilities in transitive packages. Review those advisories before using this dependency graph outside the sample.
 
 ## Connector behavior
 
@@ -40,14 +40,16 @@ dotnet test TextToolsConnector.Tests\TextToolsConnector.Tests.csproj -p:EnablePr
 az logicapp workflow validate --path LogicApp --all
 ```
 
-`-p:EnableProjectDataOnBuild=false` avoids an MSB4062 error caused by C# Dev Kit loading an SDK 10 task into an SDK 8 build. The VS Code tasks already pass it.
+The VS Code tasks also set `EnableProjectDataOnBuild=false`.
 
-Expected warnings: `MSB3246` (native asset in the workflow package) and `NETSDK1188` (ICU4N locale resources).
+The build reports `MSB3246` and `NETSDK1188` warnings as well as NuGet vulnerability advisories.
 
 ## Run locally
 
-1. Start Azurite on the ports set in `LogicApp\local.settings.json`.
-2. Open `CustomConnectorSample.code-workspace` and start debugging the `LogicApp` folder, or run the build task, then `func host start --address 127.0.0.1` from `LogicApp\bin\Debug\net8.0`.
+The .NET 10 app requires `FUNCTIONS_WORKER_RUNTIME=dotnet-isolated`. With `dotnet`, Core Tools selects its .NET 8 in-process host, which cannot load the `net10.0` connector or the dependencies the .NET 10 build expects the shared framework to provide. With `dotnet-isolated`, Core Tools 4.16.0 uses its .NET 10 host, which loads the Workflows extension and the connector. Core Tools 4.12.0 does not work: its main host runs on .NET 8. If `func` on your `PATH` is older, put the VS Code managed copy (`%USERPROFILE%\.azurelogicapps\dependencies\FuncCoreTools`) first.
+
+1. Configure the Git-ignored `LogicApp\local.settings.json` with the project's usual local settings, `AzureWebJobsStorage=UseDevelopmentStorage=true`, and `FUNCTIONS_WORKER_RUNTIME=dotnet-isolated`. Start Azurite on its configured ports.
+2. Build the project, then run `func host start --address 127.0.0.1` from `LogicApp\bin\Debug\net10.0`, using Core Tools 4.16.0. The VS Code build and publish paths are updated; F5 and the designer were not tested.
 3. Confirm the connector loaded:
 
    ```powershell
@@ -70,11 +72,13 @@ Expected warnings: `MSB3246` (native asset in the workflow package) and `NETSDK1
    }
    ```
 
-The workflow validates `text` first and returns 400 for a missing or blank value. Connector failures return a generic 500 and terminate the run as Failed. Only the success path was verified at runtime.
+In an exploratory host configuration, the workflow returned 400 for missing, null, non-string, empty, or whitespace input. An over-limit value returned a generic 500 instead of the expected 400; the .NET 8 baseline behaved the same way.
+
+`cloud.settings.json` retains the .NET 8 baseline and is not validated for .NET 10; it is a template, not deployed app configuration. Preserve any existing `LOGICAPP_INPROC_REDIRECT=1` until the deployed app is tested separately.
 
 ## Sources
 
 - [Create custom built-in connectors for Standard logic apps](https://learn.microsoft.com/en-us/azure/logic-apps/create-custom-built-in-connector-standard)
 - [Built-in connector extensibility model](https://learn.microsoft.com/en-us/azure/logic-apps/custom-connector-overview#built-in-connector-extensibility-model)
 
-The Learn tutorial targets .NET Core 3.1 and a Cosmos DB trigger, and installs into the shared extension bundle. This sample adapts it to an action-only .NET 8 connector registered through a project reference.
+The Learn tutorial targets .NET Core 3.1 and a Cosmos DB trigger, and installs into the shared extension bundle. This sample uses an action-only .NET 10 connector registered through a project reference.
