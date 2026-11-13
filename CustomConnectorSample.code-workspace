@@ -11,6 +11,12 @@
     {
       "name": "Connector tests",
       "path": "TextToolsConnector.Tests"
+    },
+    {
+      "path": ".git"
+    },
+    {
+      "path": "skills"
     }
   ]
 }
